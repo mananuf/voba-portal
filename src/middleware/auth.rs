@@ -1,17 +1,17 @@
 use crate::services::auth::AuthService;
 use actix_web::{
-    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
-    error::ErrorUnauthorized,
     Error, HttpMessage,
+    dev::{Service, ServiceRequest, ServiceResponse, Transform, forward_ready},
+    error::ErrorUnauthorized,
 };
-use futures_util::future::{ready, LocalBoxFuture, Ready};
+use futures_util::future::{LocalBoxFuture, Ready, ready};
 use std::rc::Rc;
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub struct AuthenticatedUser {
     pub user_id: Uuid,
-    pub username: String,
+    pub email: String,
 }
 
 impl AuthenticatedUser {
