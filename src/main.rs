@@ -1,7 +1,7 @@
 // use crate::services::auth::AuthService;
 use actix::Actor;
 use actix_cors::Cors;
-use actix_web::{http, middleware::Logger, web, App, HttpServer};
+use actix_web::{App, HttpServer, http, middleware::Logger, web};
 use config::settings::AppConfig;
 use database::connection::{create_pool, run_migrations};
 use dotenv::dotenv;
@@ -76,10 +76,9 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::default())
             .service(web::scope("/api/v1").configure(routes::api::scoped_config))
     })
-        .bind((server_host, server_port))?
-        .run()
-        .await?;
+    .bind((server_host, server_port))?
+    .run()
+    .await?;
 
     Ok(())
 }
-

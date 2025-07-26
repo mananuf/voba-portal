@@ -1,5 +1,5 @@
 use crate::{database::connection::DbPool, models::user::User, utils::helpers::ApiResponse};
-use actix_web::{web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, web};
 use tracing::error;
 
 pub async fn index(pool: web::Data<DbPool>) -> Result<HttpResponse> {

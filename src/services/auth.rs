@@ -1,7 +1,7 @@
 use crate::database::connection::DbPool;
 use crate::models::auth::Claims;
 use crate::models::user::User;
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use std::env;
 
 pub struct AuthService {

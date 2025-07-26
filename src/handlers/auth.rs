@@ -2,12 +2,12 @@ use crate::{
     database::connection::DbPool,
     models::{
         auth::{AuthResponse, LoginRequest, RegisterRequest, UserInfo},
-        user::{CreateUser, UserRole, User},
+        user::{CreateUser, User, UserRole},
     },
     services::auth::AuthService,
     utils::helpers::ApiResponse,
 };
-use actix_web::{web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, web};
 use tracing::error;
 
 pub async fn register(
@@ -20,9 +20,7 @@ pub async fn register(
     })?;
 
     let user_role = match request.user_role.as_ref() {
-        Some(role_str) => role_str.parse().unwrap_or_else(|_| {
-            UserRole::Member
-        }),
+        Some(role_str) => role_str.parse().unwrap_or_else(|_| UserRole::Member),
         None => UserRole::Member,
     };
 
@@ -37,23 +35,23 @@ pub async fn register(
         error!("Failed to create user: {}", e);
         actix_web::error::ErrorInternalServerError("Failed to create user")
     })?;
-    
+
     let token = auth_service.generate_token(&user).map_err(|e| {
         error!("Failed to generate token: {}", e);
         actix_web::error::ErrorInternalServerError("Failed to generate token")
     })?;
-    
+
     let user_info = UserInfo {
         id: user.id,
         fullname: user.fullname,
         email: user.email,
     };
-    
+
     let response = AuthResponse {
         token,
         user: user_info,
     };
-    
+
     Ok(HttpResponse::Created().json(ApiResponse::success(response)))
 }
 
