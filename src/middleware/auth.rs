@@ -11,7 +11,7 @@ use uuid::Uuid;
 #[derive(Debug, Clone)]
 pub struct AuthenticatedUser {
     pub user_id: Uuid,
-    pub username: String,
+    pub email: String,
 }
 
 impl AuthenticatedUser {
