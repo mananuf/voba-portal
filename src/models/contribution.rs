@@ -1,10 +1,10 @@
 use crate::database::connection::DbPool;
-use chrono::{DateTime, Utc, NaiveDate};
+use chrono::{DateTime, NaiveDate, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use uuid::Uuid;
 use thiserror::Error;
+use uuid::Uuid;
 
 #[derive(Error, Debug)]
 pub enum ContributionError {
@@ -15,7 +15,6 @@ pub enum ContributionError {
     #[error("No fields provided for update")]
     NoUpdateFields,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Contribution {
@@ -47,7 +46,10 @@ pub struct UpdateContribution {
 }
 
 impl Contribution {
-    pub async fn create(pool: &DbPool, contribution: CreateContribution) -> Result<Self, ContributionError> {
+    pub async fn create(
+        pool: &DbPool,
+        contribution: CreateContribution,
+    ) -> Result<Self, ContributionError> {
         let now = Utc::now();
 
         let contribution = sqlx::query_as::<_, Contribution>(
@@ -70,30 +72,38 @@ impl Contribution {
     }
 
     pub async fn find_by_id(pool: &DbPool, id: Uuid) -> Result<Option<Self>, ContributionError> {
-        let contribution = sqlx::query_as::<_,Contribution>("SELECT * FROM contributions WHERE id = $1")
-            .bind(id)
-            .fetch_optional(pool)
-            .await?;
+        let contribution =
+            sqlx::query_as::<_, Contribution>("SELECT * FROM contributions WHERE id = $1")
+                .bind(id)
+                .fetch_optional(pool)
+                .await?;
 
         Ok(contribution)
     }
 
     pub async fn find_all(pool: &DbPool) -> Result<Vec<Self>, ContributionError> {
-        let contributions = sqlx::query_as::<_, Contribution>("SELECT * FROM contributions ORDER BY created_at DESC")
-            .fetch_all(pool)
-            .await?;
+        let contributions = sqlx::query_as::<_, Contribution>(
+            "SELECT * FROM contributions ORDER BY created_at DESC",
+        )
+        .fetch_all(pool)
+        .await?;
 
         Ok(contributions)
     }
 
-    pub async fn update(pool: &DbPool, id: Uuid, update_data: UpdateContribution) -> Result<Option<Self>, ContributionError> {
+    pub async fn update(
+        pool: &DbPool,
+        id: Uuid,
+        update_data: UpdateContribution,
+    ) -> Result<Option<Self>, ContributionError> {
         if update_data.title.is_none()
             && update_data.description.is_none()
             && update_data.amount.is_none()
-            && update_data.due_date.is_none() {
+            && update_data.due_date.is_none()
+        {
             return Err(ContributionError::NoUpdateFields);
         }
-        
+
         let existing = match Self::find_by_id(pool, id).await? {
             Some(contribution) => contribution,
             None => return Err(ContributionError::NotFound { id }),
@@ -107,14 +117,14 @@ impl Contribution {
              WHERE id = $1 
              RETURNING *",
         )
-            .bind(id)
-            .bind(update_data.title.unwrap_or(existing.title))
-            .bind(update_data.description.or(existing.description))
-            .bind(update_data.amount.or(existing.amount))
-            .bind(update_data.due_date.unwrap_or(existing.due_date))
-            .bind(now)
-            .fetch_optional(pool)
-            .await?;
+        .bind(id)
+        .bind(update_data.title.unwrap_or(existing.title))
+        .bind(update_data.description.or(existing.description))
+        .bind(update_data.amount.or(existing.amount))
+        .bind(update_data.due_date.unwrap_or(existing.due_date))
+        .bind(now)
+        .fetch_optional(pool)
+        .await?;
 
         Ok(updated_contribution)
     }
@@ -132,24 +142,30 @@ impl Contribution {
         Ok(())
     }
 
-    pub async fn find_by_creator(pool: &DbPool, created_by: Uuid) -> Result<Vec<Self>,ContributionError> {
+    pub async fn find_by_creator(
+        pool: &DbPool,
+        created_by: Uuid,
+    ) -> Result<Vec<Self>, ContributionError> {
         let contributions = sqlx::query_as::<_, Contribution>(
-            "SELECT * FROM contributions WHERE created_by = $1 ORDER BY created_at DESC"
+            "SELECT * FROM contributions WHERE created_by = $1 ORDER BY created_at DESC",
         )
-            .bind(created_by)
-            .fetch_all(pool)
-            .await?;
+        .bind(created_by)
+        .fetch_all(pool)
+        .await?;
 
         Ok(contributions)
     }
-    
-    pub async fn find_due_before(pool: &DbPool, before_date: DateTime<Utc>) -> Result<Vec<Self>,ContributionError> {
+
+    pub async fn find_due_before(
+        pool: &DbPool,
+        before_date: DateTime<Utc>,
+    ) -> Result<Vec<Self>, ContributionError> {
         let contributions = sqlx::query_as::<_, Contribution>(
-            "SELECT * FROM contributions WHERE due_date <= $1 ORDER BY due_date ASC"
+            "SELECT * FROM contributions WHERE due_date <= $1 ORDER BY due_date ASC",
         )
-            .bind(before_date)
-            .fetch_all(pool)
-            .await?;
+        .bind(before_date)
+        .fetch_all(pool)
+        .await?;
 
         Ok(contributions)
     }

@@ -1,3 +1,4 @@
+use crate::requests::register::RegisterRequest;
 use crate::{
     database::connection::DbPool,
     models::{
@@ -9,7 +10,6 @@ use crate::{
 };
 use actix_web::{HttpResponse, Result, web};
 use tracing::error;
-use crate::requests::register::RegisterRequest;
 
 pub async fn register(
     pool: web::Data<DbPool>,

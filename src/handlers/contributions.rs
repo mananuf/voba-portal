@@ -1,11 +1,13 @@
 use crate::{
     database::connection::DbPool,
     middleware::auth::AuthenticatedUser,
-    models::contribution::{Contribution, ContributionError, CreateContribution, UpdateContribution},
+    models::contribution::{
+        Contribution, ContributionError, CreateContribution, UpdateContribution,
+    },
     requests::contribution::{ContributionRequest, UpdateContributionRequest},
     utils::helpers::ApiResponse,
 };
-use actix_web::{web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, web};
 use chrono::{DateTime, TimeZone, Utc};
 use tracing::{error, info};
 use uuid::Uuid;
@@ -27,13 +29,19 @@ pub async fn create(
 
     match Contribution::create(&pool, create_contribution).await {
         Ok(contribution) => {
-            info!("Successfully created contribution with ID: {}", contribution.id);
+            info!(
+                "Successfully created contribution with ID: {}",
+                contribution.id
+            );
             Ok(HttpResponse::Created().json(ApiResponse::success(contribution)))
         }
         Err(ContributionError::Database(e)) => {
             error!("Database error creating contribution: {}", e);
-            Ok(HttpResponse::InternalServerError()
-                .json(ApiResponse::<()>::error("Failed to create contribution".to_string())))
+            Ok(
+                HttpResponse::InternalServerError().json(ApiResponse::<()>::error(
+                    "Failed to create contribution".to_string(),
+                )),
+            )
         }
         Err(e) => {
             error!("Error creating contribution: {}", e);
@@ -44,21 +52,23 @@ pub async fn create(
 
 pub async fn get_contribution(
     pool: web::Data<DbPool>,
-    path: web::Path<Uuid>
+    path: web::Path<Uuid>,
 ) -> Result<HttpResponse> {
     let contribution_id = path.into_inner();
     info!("Getting contribution {}", contribution_id);
 
     match Contribution::find_by_id(&pool, contribution_id).await {
-        Ok(Some(contribution)) => {
-            Ok(HttpResponse::Ok().json(ApiResponse::success(contribution)))
-        }
-        Ok(None) => Ok(HttpResponse::NotFound()
-            .json(ApiResponse::<()>::error("Contribution not found".to_string()))),
+        Ok(Some(contribution)) => Ok(HttpResponse::Ok().json(ApiResponse::success(contribution))),
+        Ok(None) => Ok(HttpResponse::NotFound().json(ApiResponse::<()>::error(
+            "Contribution not found".to_string(),
+        ))),
         Err(ContributionError::Database(e)) => {
             error!("Database error getting contribution: {}", e);
-            Ok(HttpResponse::InternalServerError()
-                .json(ApiResponse::<()>::error("Failed to retrieve contribution".to_string())))
+            Ok(
+                HttpResponse::InternalServerError().json(ApiResponse::<()>::error(
+                    "Failed to retrieve contribution".to_string(),
+                )),
+            )
         }
         Err(e) => {
             error!("Error getting contribution: {}", e);
@@ -75,13 +85,14 @@ pub async fn get_user_contributions(
 
     println!("{:?}", user);
     match Contribution::find_by_creator(&pool, user.user_id).await {
-        Ok(contributions) => {
-            Ok(HttpResponse::Ok().json(ApiResponse::success(contributions)))
-        }
+        Ok(contributions) => Ok(HttpResponse::Ok().json(ApiResponse::success(contributions))),
         Err(ContributionError::Database(e)) => {
             error!("Database error getting user contributions: {}", e);
-            Ok(HttpResponse::InternalServerError()
-                .json(ApiResponse::<()>::error("Failed to retrieve contributions".to_string())))
+            Ok(
+                HttpResponse::InternalServerError().json(ApiResponse::<()>::error(
+                    "Failed to retrieve contributions".to_string(),
+                )),
+            )
         }
         Err(e) => {
             error!("Error getting user contributions: {}", e);
@@ -90,19 +101,18 @@ pub async fn get_user_contributions(
     }
 }
 
-pub async fn all(
-    pool: web::Data<DbPool>
-) -> Result<HttpResponse> {
+pub async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
     info!("Getting all contributions");
 
     match Contribution::find_all(&pool).await {
-        Ok(contributions) => {
-            Ok(HttpResponse::Ok().json(ApiResponse::success(contributions)))
-        }
+        Ok(contributions) => Ok(HttpResponse::Ok().json(ApiResponse::success(contributions))),
         Err(ContributionError::Database(e)) => {
             error!("Database error getting all contributions: {}", e);
-            Ok(HttpResponse::InternalServerError()
-                .json(ApiResponse::<()>::error("Failed to retrieve contributions".to_string())))
+            Ok(
+                HttpResponse::InternalServerError().json(ApiResponse::<()>::error(
+                    "Failed to retrieve contributions".to_string(),
+                )),
+            )
         }
         Err(e) => {
             error!("Error getting all contributions: {}", e);
@@ -118,8 +128,11 @@ pub async fn update(
     user: AuthenticatedUser,
 ) -> Result<HttpResponse> {
     let contribution_id = path.into_inner();
-    info!("Updating contribution {} for user: {}", contribution_id, user.user_id);
-    
+    info!(
+        "Updating contribution {} for user: {}",
+        contribution_id, user.user_id
+    );
+
     match Contribution::find_by_id(&pool, contribution_id).await {
         Ok(Some(existing)) => {
             if existing.created_by != user.user_id {
@@ -128,13 +141,17 @@ pub async fn update(
             }
         }
         Ok(None) => {
-            return Ok(HttpResponse::NotFound()
-                .json(ApiResponse::<()>::error("Contribution not found".to_string())));
+            return Ok(HttpResponse::NotFound().json(ApiResponse::<()>::error(
+                "Contribution not found".to_string(),
+            )));
         }
         Err(e) => {
             error!("Error checking contribution ownership: {}", e);
-            return Ok(HttpResponse::InternalServerError()
-                .json(ApiResponse::<()>::error("Failed to verify contribution".to_string())));
+            return Ok(
+                HttpResponse::InternalServerError().json(ApiResponse::<()>::error(
+                    "Failed to verify contribution".to_string(),
+                )),
+            );
         }
     }
 
@@ -150,18 +167,19 @@ pub async fn update(
             info!("Successfully updated contribution: {}", contribution_id);
             Ok(HttpResponse::Ok().json(ApiResponse::success(contribution)))
         }
-        Err(ContributionError::NotFound { id }) => {
-            Ok(HttpResponse::NotFound()
-                .json(ApiResponse::<()>::error(format!("Contribution {} not found", id))))
-        }
-        Err(ContributionError::NoUpdateFields) => {
-            Ok(HttpResponse::BadRequest()
-                .json(ApiResponse::<()>::error("No fields provided for update".to_string())))
-        }
+        Err(ContributionError::NotFound { id }) => Ok(HttpResponse::NotFound().json(
+            ApiResponse::<()>::error(format!("Contribution {} not found", id)),
+        )),
+        Err(ContributionError::NoUpdateFields) => Ok(HttpResponse::BadRequest().json(
+            ApiResponse::<()>::error("No fields provided for update".to_string()),
+        )),
         Err(ContributionError::Database(e)) => {
             error!("Database error updating contribution: {}", e);
-            Ok(HttpResponse::InternalServerError()
-                .json(ApiResponse::<()>::error("Failed to update contribution".to_string())))
+            Ok(
+                HttpResponse::InternalServerError().json(ApiResponse::<()>::error(
+                    "Failed to update contribution".to_string(),
+                )),
+            )
         }
         Err(e) => {
             error!("Error updating contribution: {}", e);
@@ -176,8 +194,11 @@ pub async fn delete(
     user: AuthenticatedUser,
 ) -> Result<HttpResponse> {
     let contribution_id = path.into_inner();
-    info!("Deleting contribution {} for user: {}", contribution_id, user.user_id);
-    
+    info!(
+        "Deleting contribution {} for user: {}",
+        contribution_id, user.user_id
+    );
+
     match Contribution::find_by_id(&pool, contribution_id).await {
         Ok(Some(existing)) => {
             if existing.created_by != user.user_id {
@@ -186,30 +207,35 @@ pub async fn delete(
             }
         }
         Ok(None) => {
-            return Ok(HttpResponse::NotFound()
-                .json(ApiResponse::<()>::error("Contribution not found".to_string())));
+            return Ok(HttpResponse::NotFound().json(ApiResponse::<()>::error(
+                "Contribution not found".to_string(),
+            )));
         }
         Err(e) => {
             error!("Error checking contribution ownership: {}", e);
-            return Ok(HttpResponse::InternalServerError()
-                .json(ApiResponse::<()>::error("Failed to verify contribution".to_string())));
+            return Ok(
+                HttpResponse::InternalServerError().json(ApiResponse::<()>::error(
+                    "Failed to verify contribution".to_string(),
+                )),
+            );
         }
     }
 
     match Contribution::delete(&pool, contribution_id).await {
         Ok(()) => {
             info!("Successfully deleted contribution: {}", contribution_id);
-            Ok(HttpResponse::Ok()
-                .json(ApiResponse::<()>::success(())))
+            Ok(HttpResponse::Ok().json(ApiResponse::<()>::success(())))
         }
-        Err(ContributionError::NotFound { id }) => {
-            Ok(HttpResponse::NotFound()
-                .json(ApiResponse::<()>::error(format!("Contribution {} not found", id))))
-        }
+        Err(ContributionError::NotFound { id }) => Ok(HttpResponse::NotFound().json(
+            ApiResponse::<()>::error(format!("Contribution {} not found", id)),
+        )),
         Err(ContributionError::Database(e)) => {
             error!("Database error deleting contribution: {}", e);
-            Ok(HttpResponse::InternalServerError()
-                .json(ApiResponse::<()>::error("Failed to delete contribution".to_string())))
+            Ok(
+                HttpResponse::InternalServerError().json(ApiResponse::<()>::error(
+                    "Failed to delete contribution".to_string(),
+                )),
+            )
         }
         Err(e) => {
             error!("Error deleting contribution: {}", e);
