@@ -1,5 +1,6 @@
 use crate::database::connection::DbPool;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, NaiveDate};
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
@@ -15,14 +16,15 @@ pub enum ContributionError {
     NoUpdateFields,
 }
 
+
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Contribution {
     pub id: Uuid,
     pub created_by: Uuid,
     pub title: String,
     pub description: Option<String>,
-    pub amount: Option<f64>,
-    pub due_date: DateTime<Utc>,
+    pub amount: Option<Decimal>,
+    pub due_date: NaiveDate,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -32,20 +34,20 @@ pub struct CreateContribution {
     pub created_by: Uuid,
     pub title: String,
     pub description: Option<String>,
-    pub amount: Option<f64>,
-    pub due_date: DateTime<Utc>,
+    pub amount: Option<Decimal>,
+    pub due_date: NaiveDate,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateContribution {
     pub title: Option<String>,
     pub description: Option<String>,
-    pub amount: Option<f64>,
-    pub due_date: Option<DateTime<Utc>>,
+    pub amount: Option<Decimal>,
+    pub due_date: Option<NaiveDate>,
 }
 
 impl Contribution {
-    pub async fn create(pool: &DbPool, contribution: CreateContribution) -> Result<Self, sqlx::Error> {
+    pub async fn create(pool: &DbPool, contribution: CreateContribution) -> Result<Self, ContributionError> {
         let now = Utc::now();
 
         let contribution = sqlx::query_as::<_, Contribution>(
@@ -55,8 +57,8 @@ impl Contribution {
         )
             .bind(Uuid::new_v4())
             .bind(contribution.title)
-            .bind(contribution.description.unwrap_or("".to_string()))
-            .bind(contribution.amount.unwrap_or(0.0))
+            .bind(contribution.description)
+            .bind(contribution.amount)
             .bind(contribution.due_date)
             .bind(contribution.created_by)
             .bind(now)
@@ -67,7 +69,7 @@ impl Contribution {
         Ok(contribution)
     }
 
-    pub async fn find_by_id(pool: &DbPool, id: Uuid) -> Result<Option<Self>, sqlx::Error> {
+    pub async fn find_by_id(pool: &DbPool, id: Uuid) -> Result<Option<Self>, ContributionError> {
         let contribution = sqlx::query_as::<_,Contribution>("SELECT * FROM contributions WHERE id = $1")
             .bind(id)
             .fetch_optional(pool)
@@ -76,7 +78,7 @@ impl Contribution {
         Ok(contribution)
     }
 
-    pub async fn find_all(pool: &DbPool) -> Result<Vec<Self>, sqlx::Error> {
+    pub async fn find_all(pool: &DbPool) -> Result<Vec<Self>, ContributionError> {
         let contributions = sqlx::query_as::<_, Contribution>("SELECT * FROM contributions ORDER BY created_at DESC")
             .fetch_all(pool)
             .await?;
@@ -117,7 +119,7 @@ impl Contribution {
         Ok(updated_contribution)
     }
 
-    pub async fn delete(pool: &DbPool, id: Uuid) -> Result<bool, ContributionError> {
+    pub async fn delete(pool: &DbPool, id: Uuid) -> Result<(), ContributionError> {
         let result = sqlx::query("DELETE FROM contributions WHERE id = $1")
             .bind(id)
             .execute(pool)
@@ -127,10 +129,10 @@ impl Contribution {
             return Err(ContributionError::NotFound { id });
         }
 
-        Ok(true)
+        Ok(())
     }
 
-    pub async fn find_by_creator(pool: &DbPool, created_by: Uuid) -> Result<Vec<Self>, sqlx::Error> {
+    pub async fn find_by_creator(pool: &DbPool, created_by: Uuid) -> Result<Vec<Self>,ContributionError> {
         let contributions = sqlx::query_as::<_, Contribution>(
             "SELECT * FROM contributions WHERE created_by = $1 ORDER BY created_at DESC"
         )
@@ -141,7 +143,7 @@ impl Contribution {
         Ok(contributions)
     }
     
-    pub async fn find_due_before(pool: &DbPool, before_date: DateTime<Utc>) -> Result<Vec<Self>, sqlx::Error> {
+    pub async fn find_due_before(pool: &DbPool, before_date: DateTime<Utc>) -> Result<Vec<Self>,ContributionError> {
         let contributions = sqlx::query_as::<_, Contribution>(
             "SELECT * FROM contributions WHERE due_date <= $1 ORDER BY due_date ASC"
         )
