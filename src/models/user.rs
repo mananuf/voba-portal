@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use crate::database::connection::DbPool;
 use bcrypt::{hash, verify, DEFAULT_COST};
 use chrono::{DateTime, Utc};
@@ -6,12 +7,26 @@ use sqlx::{FromRow, Type};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type, PartialEq, Eq)]
-#[sqlx(type_name = "user_role", rename_all = "lowercase")]
+#[sqlx(type_name = "user_roles", rename_all = "lowercase")]
 pub enum UserRole {
     SuperAdmin,
     Admin,
     Member,
     Treasurer
+}
+
+impl FromStr for UserRole {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "super_admin" => Ok(UserRole::SuperAdmin),
+            "admin" => Ok(UserRole::Admin),
+            "member" => Ok(UserRole::Member),
+            "treasurer" => Ok(UserRole::Treasurer),
+            _ => Err(()),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
@@ -34,9 +49,9 @@ pub struct CreateUser {
     pub email: String,
     pub password_hash: String,
     pub user_role: UserRole,
-    pub phone: Option<String>,
-    pub dob: Option<DateTime<Utc>>,
-    pub photo_url: Option<String>,
+    // pub phone: Option<String>,
+    // pub dob: Option<DateTime<Utc>>,
+    // pub photo_url: Option<String>,
 }
 
 impl User {
@@ -44,7 +59,7 @@ impl User {
         let now = Utc::now();
         let hashed_password =
             hash(user.password_hash.as_bytes(), DEFAULT_COST).map_err(|_| sqlx::Error::RowNotFound)?;
-
+        
         let user = sqlx::query_as::<_, User>(
             "INSERT INTO users (id, fullname, email, password_hash, user_role, created_at, updated_at) 
              VALUES ($1, $2, $3, $4, $5, $6, $7) 
