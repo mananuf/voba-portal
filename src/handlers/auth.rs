@@ -1,7 +1,7 @@
 use crate::{
     database::connection::DbPool,
     models::{
-        auth::{AuthResponse, LoginRequest, RegisterRequest, UserInfo},
+        auth::{AuthResponse, LoginRequest, UserInfo},
         user::{CreateUser, User, UserRole},
     },
     services::auth::AuthService,
@@ -9,6 +9,7 @@ use crate::{
 };
 use actix_web::{HttpResponse, Result, web};
 use tracing::error;
+use crate::requests::register::RegisterRequest;
 
 pub async fn register(
     pool: web::Data<DbPool>,
