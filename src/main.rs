@@ -45,7 +45,7 @@ async fn main() -> std::io::Result<()> {
 
     let server_host = config.server.host.clone();
     let server_port = config.server.port;
-    
+
     // let auth_service = AuthService::new().unwrap_or_else(|e| {
     //     error!("Failed to create auth service: {}", e);
     //     std::process::exit(1);
