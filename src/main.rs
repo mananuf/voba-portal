@@ -11,6 +11,8 @@ use tracing_subscriber;
 mod config;
 mod database;
 mod handlers;
+
+mod middleware;
 mod models;
 mod requests;
 mod routes;
