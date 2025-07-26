@@ -1,4 +1,4 @@
-CREATE TYPE user_roles AS ENUM ('super_admin', 'admin', 'member', 'treasurer');
+CREATE TYPE user_roles AS ENUM ('superadmin', 'admin', 'member', 'treasurer');
 
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY,

@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS payments (
     contribution_id UUID NOT NULL REFERENCES contributions(id) ON DELETE CASCADE,
     amount DECIMAL(20,9) NOT NULL,
     receipt_url TEXT,
-    status payment_status NOT NULL DEFAULT "verified"
+    status payment_status NOT NULL DEFAULT 'verified',
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
