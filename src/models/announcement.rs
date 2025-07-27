@@ -100,7 +100,7 @@ impl Announcement {
 
         let updated_announcement = sqlx::query_as::<_, Announcement>(
             "UPDATE announcements 
-             SET title = $2, body = $3, updated_at = $6
+             SET title = $2, body = $3, updated_at = $4
              WHERE id = $1 
              RETURNING *",
         )
