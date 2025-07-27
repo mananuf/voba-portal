@@ -1,9 +1,9 @@
-use std::str::FromStr;
 use crate::database::connection::DbPool;
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, Type};
+use std::str::FromStr;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -21,7 +21,7 @@ pub enum PaymentError {
 #[sqlx(type_name = "payment_status", rename_all = "lowercase")]
 pub enum PaymentStatus {
     Pending,
-    Verified
+    Verified,
 }
 
 impl FromStr for PaymentStatus {
@@ -68,10 +68,7 @@ pub struct UpdatePayment {
 }
 
 impl Payment {
-    pub async fn create(
-        pool: &DbPool,
-        payment: CreatePayment,
-    ) -> Result<Self, PaymentError> {
+    pub async fn create(pool: &DbPool, payment: CreatePayment) -> Result<Self, PaymentError> {
         let now = Utc::now();
 
         let payment = sqlx::query_as::<_, Payment>(
@@ -94,31 +91,28 @@ impl Payment {
     }
 
     pub async fn find_by_id(pool: &DbPool, id: Uuid) -> Result<Option<Self>, PaymentError> {
-        let payment =
-            sqlx::query_as::<_, Payment>("SELECT * FROM payments WHERE id = $1")
-                .bind(id)
-                .fetch_optional(pool)
-                .await?;
+        let payment = sqlx::query_as::<_, Payment>("SELECT * FROM payments WHERE id = $1")
+            .bind(id)
+            .fetch_optional(pool)
+            .await?;
 
         Ok(payment)
     }
 
     pub async fn find_by_user(pool: &DbPool, user_id: Uuid) -> Result<Option<Self>, PaymentError> {
-        let payments =
-            sqlx::query_as::<_, Payment>("SELECT * FROM payments WHERE user_id = $1")
-                .bind(user_id)
-                .fetch_optional(pool)
-                .await?;
+        let payments = sqlx::query_as::<_, Payment>("SELECT * FROM payments WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_optional(pool)
+            .await?;
 
         Ok(payments)
     }
 
     pub async fn find_all(pool: &DbPool) -> Result<Vec<Self>, PaymentError> {
-        let payments = sqlx::query_as::<_, Payment>(
-            "SELECT * FROM payments ORDER BY created_at DESC",
-        )
-            .fetch_all(pool)
-            .await?;
+        let payments =
+            sqlx::query_as::<_, Payment>("SELECT * FROM payments ORDER BY created_at DESC")
+                .fetch_all(pool)
+                .await?;
 
         Ok(payments)
     }
@@ -158,15 +152,19 @@ impl Payment {
             RETURNING *
             "#,
         )
-            .bind(id)
-            .bind(update_data.user_id.unwrap_or(existing.user_id))
-            .bind(update_data.contribution_id.or(Some(existing.contribution_id)))
-            .bind(update_data.amount.or(existing.amount))
-            .bind(update_data.status.unwrap_or(existing.status))
-            .bind(update_data.receipt_url.unwrap_or_default())
-            .bind(now)
-            .fetch_optional(pool)
-            .await?;
+        .bind(id)
+        .bind(update_data.user_id.unwrap_or(existing.user_id))
+        .bind(
+            update_data
+                .contribution_id
+                .or(Some(existing.contribution_id)),
+        )
+        .bind(update_data.amount.or(existing.amount))
+        .bind(update_data.status.unwrap_or(existing.status))
+        .bind(update_data.receipt_url.unwrap_or_default())
+        .bind(now)
+        .fetch_optional(pool)
+        .await?;
 
         Ok(updated_payment)
     }

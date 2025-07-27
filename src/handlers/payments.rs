@@ -1,15 +1,13 @@
+use crate::models::payment::{CreatePayment, Payment, PaymentError, PaymentStatus, UpdatePayment};
+use crate::models::user::UserRole;
+use crate::requests::payment::{PaymentRequest, UpdatePaymentRequest};
 use crate::{
-    database::connection::DbPool,
-    middleware::auth::AuthenticatedUser,
-    utils::helpers::ApiResponse,
+    database::connection::DbPool, middleware::auth::AuthenticatedUser, utils::helpers::ApiResponse,
 };
 use actix_web::{HttpResponse, Result, web};
 use chrono::{DateTime, TimeZone, Utc};
 use tracing::{error, info};
 use uuid::Uuid;
-use crate::models::payment::{CreatePayment, Payment, PaymentError, PaymentStatus, UpdatePayment};
-use crate::models::user::UserRole;
-use crate::requests::payment::{PaymentRequest, UpdatePaymentRequest};
 
 pub async fn create(
     pool: web::Data<DbPool>,
@@ -28,10 +26,7 @@ pub async fn create(
 
     match Payment::create(&pool, create_payment).await {
         Ok(payment) => {
-            info!(
-                "Successfully created payment with ID: {}",
-                payment.id
-            );
+            info!("Successfully created payment with ID: {}", payment.id);
             Ok(HttpResponse::Created().json(ApiResponse::success(payment)))
         }
         Err(PaymentError::Database(e)) => {
@@ -49,18 +44,14 @@ pub async fn create(
     }
 }
 
-pub async fn get_payment(
-    pool: web::Data<DbPool>,
-    path: web::Path<Uuid>,
-) -> Result<HttpResponse> {
+pub async fn get_payment(pool: web::Data<DbPool>, path: web::Path<Uuid>) -> Result<HttpResponse> {
     let payment_id = path.into_inner();
     info!("Getting contribution {}", payment_id);
 
     match Payment::find_by_id(&pool, payment_id).await {
         Ok(Some(payment)) => Ok(HttpResponse::Ok().json(ApiResponse::success(payment))),
-        Ok(None) => Ok(HttpResponse::NotFound().json(ApiResponse::<()>::error(
-            "Payment not found".to_string(),
-        ))),
+        Ok(None) => Ok(HttpResponse::NotFound()
+            .json(ApiResponse::<()>::error("Payment not found".to_string()))),
         Err(PaymentError::Database(e)) => {
             error!("Database error getting payment: {}", e);
             Ok(
@@ -81,7 +72,7 @@ pub async fn get_user_payments(
     user_id: web::Path<Uuid>,
 ) -> Result<HttpResponse> {
     info!("Getting all contributions for user: {}", user_id);
-    
+
     match Payment::find_by_user(&pool, *user_id).await {
         Ok(payments) => Ok(HttpResponse::Ok().json(ApiResponse::success(payments))),
         Err(PaymentError::Database(e)) => {
@@ -126,22 +117,21 @@ pub async fn update(
     user: AuthenticatedUser,
 ) -> Result<HttpResponse> {
     let payment_id = path.into_inner();
-    info!(
-        "Updating payment {} for user: {}",
-        payment_id, user.user_id
-    );
-    
+    info!("Updating payment {} for user: {}", payment_id, user.user_id);
+
     match Payment::find_by_id(&pool, payment_id).await {
         Ok(Some(existing)) => {
-            if existing.user_id != user.user_id && user.user_role != UserRole::Admin && user.user_role != UserRole::SuperAdmin {
+            if existing.user_id != user.user_id
+                && user.user_role != UserRole::Admin
+                && user.user_role != UserRole::SuperAdmin
+            {
                 return Ok(HttpResponse::Forbidden()
                     .json(ApiResponse::<()>::error("Access denied".to_string())));
             }
         }
         Ok(None) => {
-            return Ok(HttpResponse::NotFound().json(ApiResponse::<()>::error(
-                "Payment not found".to_string(),
-            )));
+            return Ok(HttpResponse::NotFound()
+                .json(ApiResponse::<()>::error("Payment not found".to_string())));
         }
         Err(e) => {
             error!("Error checking payment ownership: {}", e);
@@ -193,10 +183,7 @@ pub async fn delete(
     user: AuthenticatedUser,
 ) -> Result<HttpResponse> {
     let payment_id = path.into_inner();
-    info!(
-        "Deleting payment {} for user: {}",
-        payment_id, user.user_id
-    );
+    info!("Deleting payment {} for user: {}", payment_id, user.user_id);
 
     match Payment::find_by_id(&pool, payment_id).await {
         Ok(Some(existing)) => {
@@ -206,9 +193,8 @@ pub async fn delete(
             }
         }
         Ok(None) => {
-            return Ok(HttpResponse::NotFound().json(ApiResponse::<()>::error(
-                "Payment not found".to_string(),
-            )));
+            return Ok(HttpResponse::NotFound()
+                .json(ApiResponse::<()>::error("Payment not found".to_string())));
         }
         Err(e) => {
             error!("Error checking payment ownership: {}", e);

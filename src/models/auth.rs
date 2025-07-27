@@ -1,7 +1,7 @@
+use crate::models::user::UserRole;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::models::user::UserRole;
 
 #[derive(Debug, Deserialize)]
 pub struct LoginRequest {

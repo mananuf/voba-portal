@@ -1,3 +1,4 @@
+use crate::models::user::UserRole;
 use crate::services::auth::AuthService;
 use actix_web::{
     Error, HttpMessage,
@@ -7,7 +8,6 @@ use actix_web::{
 use futures_util::future::{LocalBoxFuture, Ready, ready};
 use std::rc::Rc;
 use uuid::Uuid;
-use crate::models::user::UserRole;
 
 #[derive(Debug, Clone)]
 pub struct AuthenticatedUser {
@@ -18,7 +18,11 @@ pub struct AuthenticatedUser {
 
 impl AuthenticatedUser {
     pub fn new(user_id: Uuid, email: String, user_role: UserRole) -> Self {
-        Self { user_id, email, user_role }
+        Self {
+            user_id,
+            email,
+            user_role,
+        }
     }
 }
 
@@ -86,7 +90,8 @@ where
                 .map_err(|_| ErrorUnauthorized("Invalid token"))?;
 
             // Create authenticated user and add to request extensions
-            let authenticated_user = AuthenticatedUser::new(claims.sub, claims.email, claims.user_role);
+            let authenticated_user =
+                AuthenticatedUser::new(claims.sub, claims.email, claims.user_role);
             req.extensions_mut().insert(authenticated_user);
 
             // Continue with the request

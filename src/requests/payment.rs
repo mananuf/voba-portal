@@ -1,7 +1,7 @@
+use crate::models::payment::PaymentStatus;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::models::payment::PaymentStatus;
 
 #[derive(Debug, Deserialize)]
 pub struct PaymentRequest {
