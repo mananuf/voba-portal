@@ -1,5 +1,5 @@
 use rust_decimal::Decimal;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::models::payment::PaymentStatus;
 
@@ -12,7 +12,7 @@ pub struct PaymentRequest {
     pub status: PaymentStatus,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UpdatePaymentRequest {
     pub user_id: Option<Uuid>,
     pub contribution_id: Option<Uuid>,
