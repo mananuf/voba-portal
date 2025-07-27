@@ -62,7 +62,8 @@ pub struct UpdatePayment {
     pub user_id: Option<Uuid>,
     pub contribution_id: Option<Uuid>,
     pub amount: Option<Decimal>,
-    pub receipt_url: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub receipt_url: Option<Option<String>>,
     pub status: Option<PaymentStatus>,
 }
 
@@ -74,8 +75,8 @@ impl Payment {
         let now = Utc::now();
 
         let payment = sqlx::query_as::<_, Payment>(
-            "INSERT INTO payments (id, user_id, contribution_id, amount, receipt_url, status, created_at, updated_at) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+            "INSERT INTO payments (id, user_id, contribution_id, amount, receipt_url, status, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
              RETURNING *",
         )
             .bind(Uuid::new_v4())
@@ -144,17 +145,25 @@ impl Payment {
         let now = Utc::now();
 
         let updated_payment = sqlx::query_as::<_, Payment>(
-            "UPDATE payments 
-             SET user_id = $2, contribution_id = $3, amount = $4, status = $5, receipt_url = $6, updated_at = $7
-             WHERE id = $1 
-             RETURNING *",
+            r#"
+            UPDATE payments
+            SET 
+                user_id = COALESCE($2, user_id),
+                contribution_id = COALESCE($3, contribution_id),
+                amount = COALESCE($4, amount),
+                status = COALESCE($5, status),
+                receipt_url = COALESCE($6, receipt_url),
+                updated_at = $7
+            WHERE id = $1
+            RETURNING *
+            "#,
         )
             .bind(id)
             .bind(update_data.user_id.unwrap_or(existing.user_id))
             .bind(update_data.contribution_id.or(Some(existing.contribution_id)))
             .bind(update_data.amount.or(existing.amount))
             .bind(update_data.status.unwrap_or(existing.status))
-            .bind(update_data.receipt_url.unwrap_or(existing.receipt_url.unwrap()))
+            .bind(update_data.receipt_url.unwrap_or_default())
             .bind(now)
             .fetch_optional(pool)
             .await?;
