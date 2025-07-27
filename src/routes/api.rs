@@ -74,5 +74,22 @@ pub fn scoped_config(cfg: &mut web::ServiceConfig) {
                     .route(web::get().to(handlers::payments::get_user_payments))
                     .route(web::head().to(HttpResponse::MethodNotAllowed)),
             ),
+    )
+    .service(
+        web::scope("/announcements")
+            .wrap(AuthMiddleware)
+            .service(
+                web::resource("")
+                    .route(web::get().to(handlers::announcements::all))
+                    .route(web::post().to(handlers::announcements::create))
+                    .route(web::head().to(HttpResponse::MethodNotAllowed)),
+            )
+            .service(
+                web::resource("/{id}")
+                    .route(web::get().to(handlers::announcements::get_announcement))
+                    .route(web::delete().to(handlers::announcements::delete))
+                    .route(web::put().to(handlers::announcements::update))
+                    .route(web::head().to(HttpResponse::MethodNotAllowed)),
+            ),
     );
 }
