@@ -91,5 +91,22 @@ pub fn scoped_config(cfg: &mut web::ServiceConfig) {
                     .route(web::put().to(handlers::announcements::update))
                     .route(web::head().to(HttpResponse::MethodNotAllowed)),
             ),
+    )
+    .service(
+        web::scope("/photos")
+            .wrap(AuthMiddleware)
+            .service(
+                web::resource("")
+                    .route(web::get().to(handlers::photos::all))
+                    .route(web::post().to(handlers::photos::create))
+                    .route(web::head().to(HttpResponse::MethodNotAllowed)),
+            )
+            .service(
+                web::resource("/{id}")
+                    .route(web::get().to(handlers::photos::get_photo))
+                    .route(web::delete().to(handlers::photos::delete))
+                    .route(web::put().to(handlers::photos::update))
+                    .route(web::head().to(HttpResponse::MethodNotAllowed)),
+            ),
     );
 }
