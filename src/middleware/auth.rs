@@ -1,3 +1,4 @@
+use crate::models::user::UserRole;
 use crate::services::auth::AuthService;
 use actix_web::{
     Error, HttpMessage,
@@ -12,11 +13,16 @@ use uuid::Uuid;
 pub struct AuthenticatedUser {
     pub user_id: Uuid,
     pub email: String,
+    pub user_role: UserRole,
 }
 
 impl AuthenticatedUser {
-    pub fn new(user_id: Uuid, email: String) -> Self {
-        Self { user_id, email }
+    pub fn new(user_id: Uuid, email: String, user_role: UserRole) -> Self {
+        Self {
+            user_id,
+            email,
+            user_role,
+        }
     }
 }
 
@@ -84,7 +90,8 @@ where
                 .map_err(|_| ErrorUnauthorized("Invalid token"))?;
 
             // Create authenticated user and add to request extensions
-            let authenticated_user = AuthenticatedUser::new(claims.sub, claims.email);
+            let authenticated_user =
+                AuthenticatedUser::new(claims.sub, claims.email, claims.user_role);
             req.extensions_mut().insert(authenticated_user);
 
             // Continue with the request

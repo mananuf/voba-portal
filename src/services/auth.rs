@@ -20,7 +20,7 @@ impl AuthService {
     }
 
     pub fn generate_token(&self, user: &User) -> Result<String, jsonwebtoken::errors::Error> {
-        let claims = Claims::new(user.id, user.email.clone());
+        let claims = Claims::new(user.id, user.email.clone(), user.user_role.clone());
         encode(&Header::default(), &claims, &self.encoding_key)
     }
 
