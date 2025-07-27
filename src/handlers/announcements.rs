@@ -1,6 +1,7 @@
 use crate::models::announcement::{
     Announcement, AnnouncementError, CreateAnnouncement, UpdateAnnouncement,
 };
+use crate::models::user::UserRole;
 use crate::requests::announcement::{CreateAnnouncementRequest, UpdateAnnouncementRequest};
 use crate::{
     database::connection::DbPool, middleware::auth::AuthenticatedUser, utils::helpers::ApiResponse,
@@ -107,7 +108,10 @@ pub async fn update(
 
     match Announcement::find_by_id(&pool, announcement_id).await {
         Ok(Some(existing)) => {
-            if existing.posted_by != user.user_id {
+            if existing.posted_by != user.user_id
+                && user.user_role != UserRole::Admin
+                && user.user_role != UserRole::SuperAdmin
+            {
                 return Ok(HttpResponse::Forbidden()
                     .json(ApiResponse::<()>::error("Access denied".to_string())));
             }
@@ -171,7 +175,10 @@ pub async fn delete(
 
     match Announcement::find_by_id(&pool, announcement_id).await {
         Ok(Some(existing)) => {
-            if existing.posted_by != user.user_id {
+            if existing.posted_by != user.user_id
+                && user.user_role != UserRole::Admin
+                && user.user_role != UserRole::SuperAdmin
+            {
                 return Ok(HttpResponse::Forbidden()
                     .json(ApiResponse::<()>::error("Access denied".to_string())));
             }
