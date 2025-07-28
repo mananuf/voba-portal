@@ -11,7 +11,7 @@ pub fn scoped_config(cfg: &mut web::ServiceConfig) {
                 web::resource("/resend-verification")
                     .route(web::get().to(handlers::auth::resend_verification)),
             )
-            .service(web::resource("/verify").route(web::post().to(handlers::auth::verify_email))),
+            .service(web::resource("/verify").route(web::get().to(handlers::auth::verify_email))),
     )
     .service(
         web::scope("/users")
