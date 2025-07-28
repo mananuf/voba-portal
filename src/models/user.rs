@@ -1,11 +1,11 @@
 use crate::database::connection::DbPool;
 use bcrypt::{DEFAULT_COST, hash, verify};
 use chrono::{DateTime, Duration, Utc};
+use rand::Rng;
+use rand::distributions::Alphanumeric;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, Type};
 use std::str::FromStr;
-use rand::distributions::Alphanumeric;
-use rand::Rng;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -93,7 +93,7 @@ impl User {
         if let Ok(Some(_)) = Self::find_by_email(pool, &user.email).await {
             return Err(UserError::EmailAlreadyExists { email: user.email });
         }
-        
+
         let now = Utc::now();
         let hashed_password = hash(user.password_hash.as_bytes(), DEFAULT_COST)
             .map_err(|_| UserError::PasswordHash)?;
@@ -141,7 +141,10 @@ impl User {
         Ok(user)
     }
 
-    pub async fn find_by_verification_code(pool: &DbPool, code: &str) -> Result<Option<Self>, UserError> {
+    pub async fn find_by_verification_code(
+        pool: &DbPool,
+        code: &str,
+    ) -> Result<Option<Self>, UserError> {
         let user = sqlx::query_as::<_, User>(
             r#"
             SELECT id, fullname, email, password_hash, phone, dob, photo_url, 
@@ -149,10 +152,11 @@ impl User {
                    email_verification_expires_at, is_email_verified, is_active, 
                    created_at, updated_at
             FROM users WHERE email_verification_code = $1
-            "#,)
-            .bind(code)
-            .fetch_optional(pool)
-            .await?;
+            "#,
+        )
+        .bind(code)
+        .fetch_optional(pool)
+        .await?;
 
         Ok(user)
     }
@@ -161,7 +165,7 @@ impl User {
         let user = Self::find_by_verification_code(pool, verification_code)
             .await?
             .ok_or(UserError::InvalidVerificationCode)?;
-        
+
         if let Some(expires_at) = user.email_verification_expires_at {
             if Utc::now() > expires_at {
                 return Err(UserError::VerificationCodeExpired);
@@ -181,11 +185,12 @@ impl User {
                       user_role, email_verification_code, 
                       email_verification_expires_at, is_email_verified, is_active, 
                       created_at, updated_at
-            "#,)
-            .bind(user.id)
-            .bind(Utc::now())
-            .fetch_one(pool)
-            .await?;
+            "#,
+        )
+        .bind(user.id)
+        .bind(Utc::now())
+        .fetch_one(pool)
+        .await?;
 
         Ok(updated_user)
     }
@@ -193,7 +198,9 @@ impl User {
     pub async fn resend_verification_code(pool: &DbPool, email: &str) -> Result<Self, UserError> {
         let user = Self::find_by_email(pool, email)
             .await?
-            .ok_or(UserError::NotFoundByEmail { email: email.to_string() })?;
+            .ok_or(UserError::NotFoundByEmail {
+                email: email.to_string(),
+            })?;
 
         if user.is_email_verified {
             return Ok(user); // Already verified, no need to resend
@@ -202,7 +209,7 @@ impl User {
         let new_verification_code = Self::generate_verification_code();
         let new_expires_at = Utc::now() + Duration::hours(24);
 
-    let updated_user = sqlx::query_as::<_, User >(
+        let updated_user = sqlx::query_as::<_, User>(
             r#"
             UPDATE users 
             SET email_verification_code = $2, 
@@ -213,13 +220,14 @@ impl User {
                       user_role as "user_role: UserRole", email_verification_code, 
                       email_verification_expires_at, is_email_verified, is_active, 
                       created_at, updated_at
-            "#,)
-            .bind(user.id)
-            .bind(new_verification_code)
-            .bind(new_expires_at)
-            .bind(Utc::now())
-            .fetch_one(pool)
-            .await?;
+            "#,
+        )
+        .bind(user.id)
+        .bind(new_verification_code)
+        .bind(new_expires_at)
+        .bind(Utc::now())
+        .fetch_one(pool)
+        .await?;
 
         Ok(updated_user)
     }
@@ -232,14 +240,13 @@ impl User {
                        email_verification_expires_at, is_email_verified, is_active, 
                        created_at, updated_at
                 FROM users ORDER BY created_at DESC
-                "#
-            )
-            .fetch_all(pool)
-            .await?;
+                "#,
+        )
+        .fetch_all(pool)
+        .await?;
 
         Ok(users)
     }
-
 
     pub fn verify_password(&self, password: &str) -> Result<bool, bcrypt::BcryptError> {
         verify(password, &self.password_hash)
@@ -258,10 +265,7 @@ impl User {
         Ok(None)
     }
 
-    pub async fn toggle_active(
-        pool: &DbPool,
-        user_id: Uuid
-    ) -> Result<Self, UserError> {
+    pub async fn toggle_active(pool: &DbPool, user_id: Uuid) -> Result<Self, UserError> {
         let user = Self::find_by_id(pool, user_id)
             .await?
             .ok_or(UserError::NotFound { id: user_id })?;
@@ -275,11 +279,11 @@ impl User {
             RETURNING *
             "#,
         )
-            .bind(user.id)
-            .bind(!user.is_active)
-            .bind(Utc::now())
-            .fetch_one(pool)
-            .await?;
+        .bind(user.id)
+        .bind(!user.is_active)
+        .bind(Utc::now())
+        .fetch_one(pool)
+        .await?;
 
         Ok(updated_user)
     }

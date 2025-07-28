@@ -1,21 +1,30 @@
-use actix_web::{HttpResponse, web};
 use crate::handlers;
 use crate::middleware::auth::AuthMiddleware;
+use actix_web::{HttpResponse, web};
 
 pub fn scoped_config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/auth")
             .service(web::resource("/register").route(web::post().to(handlers::auth::register)))
             .service(web::resource("/login").route(web::post().to(handlers::auth::login)))
-            .service(web::resource("/resend-verification").route(web::get().to(handlers::auth::resend_verification)))
+            .service(
+                web::resource("/resend-verification")
+                    .route(web::get().to(handlers::auth::resend_verification)),
+            )
             .service(web::resource("/verify").route(web::post().to(handlers::auth::verify_email))),
     )
     .service(
-        web::scope("/users").service(
-            web::resource("")
-                .route(web::get().to(handlers::users::index))
-                .route(web::head().to(HttpResponse::MethodNotAllowed)),
-        ).service(web::resource("/{id}/toggle-active").wrap(AuthMiddleware).route(web::post().to(handlers::users::toggle_user_active))),
+        web::scope("/users")
+            .service(
+                web::resource("")
+                    .route(web::get().to(handlers::users::index))
+                    .route(web::head().to(HttpResponse::MethodNotAllowed)),
+            )
+            .service(
+                web::resource("/{id}/toggle-active")
+                    .wrap(AuthMiddleware)
+                    .route(web::post().to(handlers::users::toggle_user_active)),
+            ),
     )
     .service(
         web::scope("/contributions")

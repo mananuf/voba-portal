@@ -1,7 +1,7 @@
 use lettre::{
-    message::{header::ContentType, MultiPart, SinglePart},
+    Message, SmtpTransport, Transport,
+    message::{MultiPart, SinglePart, header::ContentType},
     transport::smtp::authentication::Credentials,
-    SmtpTransport, Transport, Message,
 };
 use serde::{Deserialize, Serialize};
 use std::env;
@@ -255,7 +255,10 @@ If you didn't create an account with Portal, please ignore this email.
         EmailTemplate {
             subject: "Welcome to Portal - Email Verified!".to_string(),
             html_body,
-            text_body: Some(format!("Hi {}!\n\nYour email has been successfully verified. Welcome to Portal!\n\nYou can now access all features of your account.", user_name)),
+            text_body: Some(format!(
+                "Hi {}!\n\nYour email has been successfully verified. Welcome to Portal!\n\nYou can now access all features of your account.",
+                user_name
+            )),
         }
     }
 }
