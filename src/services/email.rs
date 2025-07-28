@@ -123,7 +123,7 @@ impl EmailService {
                 .subject(&template.subject)
                 .multipart(
                     MultiPart::alternative()
-                        .singlepart(SinglePart::html(template.html_body.clone()))
+                        .singlepart(SinglePart::html(template.html_body.clone())),
                 )?
         };
 
@@ -621,7 +621,10 @@ mod tests {
         let service = EmailService {
             mailer: SmtpTransport::starttls_relay(&config.smtp_server)
                 .unwrap()
-                .credentials(Credentials::new(config.username.clone(), config.password.clone()))
+                .credentials(Credentials::new(
+                    config.username.clone(),
+                    config.password.clone(),
+                ))
                 .build(),
             config,
         };
