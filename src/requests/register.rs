@@ -6,4 +6,5 @@ pub struct RegisterRequest {
     pub email: String,
     pub password: String,
     pub user_role: Option<String>,
+    pub is_active: Option<bool>,
 }
